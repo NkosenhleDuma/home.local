@@ -18,6 +18,9 @@ const Home = () => {
         <Card title="Electricity Usage" linkTo="/electricity-usage">
           <p>View your electricity usage over time.</p>
         </Card>
+        <Card title="Load Shedding" linkTo="/loadshedding">
+          <p>View upcoming load-shedding times.</p>
+        </Card>
       </div>
     );
   };

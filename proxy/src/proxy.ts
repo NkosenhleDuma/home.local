@@ -1,12 +1,12 @@
-const express = require('express');
-const axios = require('axios');
-const app = express();
-const fs = require('fs');
-const path = require('path');
-const https = require('https')
+import express from 'express'
+import axios from 'axios'
+import * as fs from 'fs'
+import * as path from 'path'
+import * as https from 'https'
 
 require("dotenv").config()
 
+const app = express();
 
 app.use(express.json());
 
@@ -22,7 +22,7 @@ const readCache = (): { [url: string]: { data: object, timestamp: number } } => 
 };
 
 // Function to write cache to file
-const writeCache = (cache) => {
+const writeCache = (cache: { [url: string]: { data: object; timestamp: number; }; }) => {
   fs.writeFileSync(CACHE_FILE, JSON.stringify(cache, null, 2), 'utf8');
 };
 
@@ -31,7 +31,6 @@ app.use(express.json()); // Middleware to parse JSON bodies
 app.use('/proxy/rms', async (req, res) => {
   // Extract URL from query or body based on the request type
   const url = req.method === 'POST' ? req.body.url : req.query.url;
-  const headers = req.headers
 
   // Basic validation of the URL
   if (!url || !url.startsWith('http')) {
@@ -40,14 +39,14 @@ app.use('/proxy/rms', async (req, res) => {
 
   try {
     // Perform a GET or POST request based on the incoming request
-    let response;
+    let response: { data: any; };
     if (req.method === 'POST') {
       // For POST, forward the body received (excluding the 'url' field)
       const { url, data: { ...bodyContent } } = req.body;
-      response = await axios.post(decodeURIComponent(url), bodyContent, { httpsAgent: new https.Agent({ rejectUnauthorized: false }) });
+      response = await axios.post(decodeURIComponent(url), bodyContent);
     } else {
       // For GET, directly forward the request
-      response = await axios.get(url, { headers, httpsAgent: new https.Agent({ rejectUnauthorized: false }) });
+      response = await axios.get(url);
     }
 
     // Send back the response from the external server
@@ -59,11 +58,15 @@ app.use('/proxy/rms', async (req, res) => {
 });
 
 const cache: { [url: string]: { data: object, timestamp: number } } | {} = {}; // Simple in-memory cache
-const CACHE_DURATION = 3600 * 1000; // 1 hour cache duration
+const CACHE_DURATION = 1.5 * 3600 * 1000; // 1 hour cache duration
 app.use('/proxy/loadshedding', async (req, res) => {
-  const url = req.query.url;
-  const cache = readCache();
+  const url = req.query.url?.toString();
+  
+  if (!url) {
+    throw "No url in query!"
+  }
 
+  const cache = readCache();
   const now = new Date();
   
   // Check if the cache for the URL exists and calculate the time elapsed
@@ -97,3 +100,5 @@ app.use('/proxy/loadshedding', async (req, res) => {
 })
 
 app.listen(3001, () => console.log('Proxy server running on port 3001'));
+
+export {}
